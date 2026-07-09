@@ -140,6 +140,7 @@ Accepts OpenAI-style chat payloads, concatenates all message text, and scans it 
 
 ```json
 {
+  "model": "nlp",
   "messages": [
     {"role": "user", "content": "Check this text for sensitive information."}
   ]
@@ -177,16 +178,53 @@ Returns a static model listing for compatibility.
 }
 ```
 
+### GET /v1/plugins
+
+Returns a list of currently active plugins loaded by the service.
+
+#### Response example
+
+```json
+{
+  "active_plugins": ["spacy", "gliner"],
+  "total": 2
+}
+```
+
+### POST /v1/plugins/register
+
+Registers a custom NLP plugin at runtime without restarting the service.
+
+#### Request example
+
+```json
+{
+  "name": "custom_plugin",
+  "module": "my_plugin_module",
+  "scanner_fn": "scan_text"
+}
+```
+
+#### Response example
+
+```json
+{
+  "status": "registered",
+  "plugin": "custom_plugin"
+}
+```
+
 ### GET /health
 
-Returns service health.
+Returns service health and active plugin information.
 
 #### Response example
 
 ```json
 {
   "status": "ok",
-  "service": "privaclave-nlp-service"
+  "service": "privaclave-nlp-service",
+  "active_plugins": ["spacy", "gliner"]
 }
 ```
 
