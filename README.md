@@ -2,43 +2,44 @@
 
 ## Project Overview
 
-`Privaclave NLP Service` is a Python FastAPI service that performs privacy classification and entity detection for Privaclave. It is designed to scan text for sensitive information and return structured metadata to downstream services such as the orchestrator.
+`Privaclave NLP Service` is a Python FastAPI service that performs privacy classification and entity detection. It scans text for sensitive information and returns structured metadata to downstream services such as the orchestrator.
 
 ## Purpose
 
 - Detect sensitive data and named entities in text.
 - Provide a raw scan API for direct classification requests.
-- Offer an OpenAI-compatible chat endpoint for compatibility with orchestration layers like Bifrost.
-- Support runtime extension through a dynamic plugin registry.
+- Offer an OpenAI-compatible chat endpoint for compatibility with orchestration layers.
+- Load scanning plugins at startup from configuration.
 
-## How the Plugin Registry Works
+## Configuration and Plugin Loading
 
-The service maintains a runtime `PLUGIN_REGISTRY`.
+The service loads `config.json` at startup. The config defines which plugins are enabled and their loader settings.
 
-- `register_plugin(name, scanner)` registers a scanner function under `name`.
-- Each scanner must accept a single `text: str` parameter and return a list of entity records.
-- Built-in plugins are loaded during startup with `load_spacy()` and `load_gliner()`.
-- Custom plugins can be registered without changing core source code.
+Built-in plugin loaders:
 
-### Registering a custom plugin at runtime
+- `spacy`
+- `gliner`
 
-Use `POST /v1/plugins/register` with this payload:
+Each plugin is loaded during startup and added to the runtime `PLUGIN_REGISTRY`.
+
+To change plugin behavior, update `config.json` and restart the service.
+
+### Example plugin config entry
 
 ```json
 {
-  "module": "my_plugin_module",
-  "scanner_fn": "scan_text",
-  "name": "custom_plugin"
+  "name": "gliner",
+  "enabled": true,
+  "model": "urchade/gliner_multi_pii-v1",
+  "labels": ["email", "phone_number", "ssn"]
 }
 ```
-
-The service imports `my_plugin_module`, retrieves `scan_text`, and adds it to the registry.
 
 ## Built-in Plugins
 
 ### spaCy
 
-- Loaded from `spacy.load("en_core_web_sm")`.
+- Loaded from `spacy.load("en_core_web_sm")` by default.
 - Performs general named entity recognition (NER).
 - Returns entities with:
   - `text`
@@ -50,7 +51,7 @@ The service imports `my_plugin_module`, retrieves `scan_text`, and adds it to th
 
 ### GLiNER
 
-- Loaded from `GLiNER.from_pretrained("urchade/gliner_multi_pii-v1")`.
+- Loaded from `GLiNER.from_pretrained("urchade/gliner_multi_pii-v1")` by default.
 - Detects sensitive Personally Identifiable Information (PII).
 - Maps raw GLiNER labels to normalized fields and policy labels.
 - Returns entities with:
@@ -133,7 +134,7 @@ Scans text and returns raw NLP detection results.
 
 ### POST /v1/chat/completions
 
-Accepts OpenAI-style chat payloads and scans the concatenated message text.
+Accepts OpenAI-style chat payloads, concatenates all message text, and scans it with active plugins.
 
 #### Request example
 
@@ -176,30 +177,16 @@ Returns a static model listing for compatibility.
 }
 ```
 
-### GET /v1/plugins
-
-Returns registered plugin names.
-
-#### Response example
-
-```json
-{
-  "active_plugins": ["spacy", "gliner"],
-  "total": 2
-}
-```
-
 ### GET /health
 
-Returns service health and active plugins.
+Returns service health.
 
 #### Response example
 
 ```json
 {
   "status": "ok",
-  "service": "privaclave-nlp-service",
-  "active_plugins": ["spacy", "gliner"]
+  "service": "privaclave-nlp-service"
 }
 ```
 
@@ -220,21 +207,11 @@ Example mappings:
 
 This mapping ensures results are consistent and easier to consume.
 
-## Swapping Libraries Without Changing Core Code
+## Plugin Extension
 
-Use `POST /v1/plugins/register` to add a new scanner at runtime.
+Custom plugins are loaded from `config.json` at startup. To add or change a plugin, update `config.json` and restart the service.
 
-#### Example payload
-
-```json
-{
-  "module": "my_custom_scanner",
-  "scanner_fn": "scan_text",
-  "name": "custom_nlp"
-}
-```
-
-The service imports the module, pulls the scanner function, and registers it under the given name.
+The current implementation does not expose a runtime `POST /v1/plugins/register` endpoint.
 
 ## Dependencies
 

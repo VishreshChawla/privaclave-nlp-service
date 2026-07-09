@@ -1,0 +1,27 @@
+{
+  "plugins": [
+    {
+      "name": "spacy",
+      "enabled": true,
+      "model": "en_core_web_sm"
+    },
+    {
+      "name": "gliner",
+      "enabled": true,
+      "model": "urchade/gliner_multi_pii-v1",
+      "labels": [
+        "person", "name", "geo_location", "bank_account", "payment_card",
+        "birth_date", "dob", "address", "street", "city", "zip_code",
+        "email", "phone_number", "social_security_number", "ssn",
+        "passport_number", "credit_card_expiry", "card_expiry",
+        "IP_address", "gender", "cvv_number", "ethnicity", "religion",
+        "age", "medical_record_number", "health_plan_number",
+        "date_of_discharge", "date_of_admission", "date_of_death",
+        "fax_number", "vin", "vehicle_license_plate", "device_serial_number",
+        "url", "sexual_orientation", "race", "organization", "role",
+        "nationality", "health condition", "medication", "credit_card_number",
+        "bank_account_number", "email_id", "phone", "MRN", "CVV", "ssn_no"
+      ]
+    }
+  ]
+}
